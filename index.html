@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Bus Passenger Demand Prediction & Extra Bus Alert System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-section">
+        <span class="bus-icon">🚌</span>
+        <div>
+          <h1 class="project-title">AI-Based Bus Passenger Demand Prediction</h1>
+          <p class="project-subtitle">Tirupur Bus Stand Terminal Monitoring & Decision Support System</p>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="badge-dot"></span>
+        <span>Prototype v1.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- Quick Scenario Presets for Testing -->
+    <section class="preset-section">
+      <div class="preset-label">
+        <strong>Quick Demo Scenarios:</strong>
+        <span>Click to test system conditions immediately</span>
+      </div>
+      <div class="preset-buttons">
+        <button type="button" class="btn btn-preset" id="presetHighCrowd">
+          ⚠️ Scenario 1: High Surge (Extra Bus Needed)
+        </button>
+        <button type="button" class="btn btn-preset" id="presetNormalCrowd">
+          ✅ Scenario 2: Normal Flow (Capacity Sufficient)
+        </button>
+        <button type="button" class="btn btn-secondary-sm" id="resetDefaults">
+          🔄 Reset Defaults
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- Input Card -->
+      <section class="card form-card">
+        <div class="card-header">
+          <h2 class="card-title">Live Terminal & Schedule Parameters</h2>
+          <p class="card-description">Enter real-time crowd and timetable inputs for the upcoming scheduled trip</p>
+        </div>
+
+        <form id="predictionForm" class="prediction-form" novalidate>
+          <div class="form-group">
+            <label for="busRoute">Bus Route / Name</label>
+            <input 
+              type="text" 
+              id="busRoute" 
+              name="busRoute" 
+              required 
+              placeholder="e.g., Route 20A - Tirupur Old Bus Stand to Avinashi" 
+              value="Route 20A - Tirupur Old Bus Stand to Avinashi"
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="arrivalTime">Scheduled Bus Arrival Time</label>
+              <input 
+                type="time" 
+                id="arrivalTime" 
+                name="arrivalTime" 
+                required 
+                value="16:45"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label for="busCapacity">Bus Capacity (Passengers)</label>
+              <div class="input-with-unit">
+                <input 
+                  type="number" 
+                  id="busCapacity" 
+                  name="busCapacity" 
+                  min="10" 
+                  max="120" 
+                  required 
+                  value="50"
+                >
+                <span class="unit-tag">seats</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="currentPassengers">Current Waiting Passengers</label>
+              <div class="input-with-unit">
+                <input 
+                  type="number" 
+                  id="currentPassengers" 
+                  name="currentPassengers" 
+                  min="0" 
+                  max="300" 
+                  required 
+                  value="42"
+                >
+                <span class="unit-tag">people</span>
+              </div>
+              <small class="helper-text">Observed headcount at the boarding bay</small>
+            </div>
+
+            <div class="form-group">
+              <label for="historicalAverage">Historical Average Passengers</label>
+              <div class="input-with-unit">
+                <input 
+                  type="number" 
+                  id="historicalAverage" 
+                  name="historicalAverage" 
+                  min="0" 
+                  max="300" 
+                  required 
+                  value="60"
+                >
+                <span class="unit-tag">people</span>
+              </div>
+              <small class="helper-text">Historical load for this time slot & route</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="minutesRemaining">Minutes Remaining Before Bus Arrival</label>
+            <div class="input-with-unit">
+              <input 
+                type="number" 
+                id="minutesRemaining" 
+                name="minutesRemaining" 
+                min="1" 
+                max="120" 
+                required 
+                value="15"
+              >
+              <span class="unit-tag">mins</span>
+            </div>
+            <small class="helper-text">Estimated time until the bus arrives at the platform</small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="predictBtn">
+              <span>⚡ Predict Demand & Evaluate</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Output / Alert Card -->
+      <section class="card output-card">
+        <div class="card-header">
+          <h2 class="card-title">Prediction & Extra Bus Evaluation</h2>
+          <p class="card-description">Real-time demand projection and fleet dispatch alert</p>
+        </div>
+
+        <!-- Primary Alert Banner -->
+        <div id="alertBanner" class="alert-banner alert-high">
+          <div class="alert-icon" id="alertIcon">⚠️</div>
+          <div class="alert-content">
+            <h3 class="alert-title" id="crowdStatusText">HIGH CROWD EXPECTED</h3>
+            <p class="alert-recommendation" id="busRecommendationText">EXTRA BUS RECOMMENDED</p>
+          </div>
+        </div>
+
+        <!-- KPI Metrics Grid -->
+        <div class="metrics-grid">
+          
+          <div class="metric-card">
+            <span class="metric-label">Predicted Passenger Demand</span>
+            <div class="metric-value-group">
+              <span class="metric-value" id="kpiPredictedDemand">72</span>
+              <span class="metric-unit">pax</span>
+            </div>
+            <span class="metric-subtext" id="kpiIncomingBreakdown">Includes ~30 incoming</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Scheduled Bus Capacity</span>
+            <div class="metric-value-group">
+              <span class="metric-value" id="kpiBusCapacity">50</span>
+              <span class="metric-unit">seats</span>
+            </div>
+            <span class="metric-subtext">Vehicle baseline limit</span>
+          </div>
+
+          <div class="metric-card" id="diffCard">
+            <span class="metric-label">Demand vs Capacity Diff</span>
+            <div class="metric-value-group">
+              <span class="metric-value" id="kpiDifference">+22</span>
+              <span class="metric-unit">pax</span>
+            </div>
+            <span class="metric-subtext" id="diffStatusText">Overcapacity</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Crowd Status</span>
+            <div class="metric-value-group">
+              <span class="metric-value status-indicator" id="kpiCrowdStatus">HIGH</span>
+            </div>
+            <span class="metric-subtext" id="kpiCapacityUtilization">144% of capacity</span>
+          </div>
+
+        </div>
+
+        <!-- Detailed Breakdown -->
+        <div class="summary-box">
+          <h4 class="summary-title">Demand Calculation Breakdown</h4>
+          <ul class="summary-list">
+            <li>
+              <span>Current waiting passengers:</span>
+              <strong id="summaryCurrent">42</strong>
+            </li>
+            <li>
+              <span>Projected new arrivals before bus arrives:</span>
+              <strong id="summaryIncoming">+30</strong>
+            </li>
+            <li>
+              <span>Estimated arrival rate:</span>
+              <span id="summaryRate">2.0 passengers/min</span>
+            </li>
+            <li>
+              <span>Total predicted passengers at arrival:</span>
+              <strong id="summaryTotal">72</strong>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Prototype ML Notice -->
+        <div class="prototype-notice">
+          <div class="notice-icon">ℹ️</div>
+          <div class="notice-body">
+            <strong>Prototype Architecture Note:</strong>
+            <p>
+              This prototype utilizes a decoupled heuristic baseline in 
+              <code>script.js</code> (<code>predictPassengerDemand()</code>). 
+              It is designed as an interface-ready decision support tool that can be linked to a trained Machine Learning model (e.g., Random Forest / Regression) in the next phase.
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- College Project Information Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><strong>Project:</strong> AI-Based Bus Passenger Demand Prediction and Extra Bus Alert System</p>
+        <p><strong>Deployment Location:</strong> Tirupur Bus Stand | Academic Capstone Prototype</p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
