@@ -1,17 +1,14 @@
 /**
- * AI-Based Bus Passenger Demand Prediction and Extra Bus Alert System
- * Client-side Controller & Heuristic Demand Engine
- *
- * NOTE FOR COLLEGE PROJECT EVALUATION:
- * This prototype uses a decoupled baseline prediction engine (`predictPassengerDemand`).
- * It simulates passenger arrival trends based on historical observation rates.
- * In a future phase, this isolated function can be directly replaced by an API request
- * to a trained Machine Learning model (e.g., Python Flask/FastAPI serving an XGBoost,
- * Random Forest, or LSTM model).
+ * AI-Based Bus Passenger Demand Prediction
+ * Frontend connected to Flask ML API
  */
+
+// API endpoint
+const API_URL = "/predict";
 
 // DOM Element References
 const predictionForm = document.getElementById("predictionForm");
+
 const busRouteInput = document.getElementById("busRoute");
 const arrivalTimeInput = document.getElementById("arrivalTime");
 const busCapacityInput = document.getElementById("busCapacity");
@@ -19,7 +16,7 @@ const currentPassengersInput = document.getElementById("currentPassengers");
 const historicalAverageInput = document.getElementById("historicalAverage");
 const minutesRemainingInput = document.getElementById("minutesRemaining");
 
-// Output & KPI Elements
+// Output Elements
 const alertBanner = document.getElementById("alertBanner");
 const alertIcon = document.getElementById("alertIcon");
 const crowdStatusText = document.getElementById("crowdStatusText");
@@ -33,213 +30,445 @@ const kpiIncomingBreakdown = document.getElementById("kpiIncomingBreakdown");
 const kpiCapacityUtilization = document.getElementById("kpiCapacityUtilization");
 const diffStatusText = document.getElementById("diffStatusText");
 
-// Breakdown Summary Elements
+// Breakdown Elements
 const summaryCurrent = document.getElementById("summaryCurrent");
 const summaryIncoming = document.getElementById("summaryIncoming");
 const summaryRate = document.getElementById("summaryRate");
 const summaryTotal = document.getElementById("summaryTotal");
 
-// Preset Action Buttons
+// Preset Buttons
 const presetHighCrowdBtn = document.getElementById("presetHighCrowd");
 const presetNormalCrowdBtn = document.getElementById("presetNormalCrowd");
 const resetDefaultsBtn = document.getElementById("resetDefaults");
 
-/**
- * ==========================================================================
- * DECOUPLED PREDICTION ENGINE (PROTOTYPE BASELINE)
- * ==========================================================================
- * 
- * Future Integration Guide:
- * Replace this function with an async call to your ML backend:
- * 
- * async function predictPassengerDemand(params) {
- *   const response = await fetch('/api/predict', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json' },
- *     body: JSON.stringify(params)
- *   });
- *   return await response.json();
- * }
+
+/*
+ * Convert the existing route text into
+ * one of the routes used while training the ML model.
  */
-function predictPassengerDemand({
-  currentPassengers,
-  historicalAverage,
-  minutesRemaining,
-  busCapacity
-}) {
-  // Baseline arrival window assumption (30-minute standard pre-arrival buildup)
-  const observationWindowMins = 30;
+function getMLRoute(routeText) {
 
-  // Rate of arrivals per minute deduced from historical time-slot volume
-  const arrivalRatePerMinute = historicalAverage > 0 ? (historicalAverage / observationWindowMins) : 0;
-
-  // Estimated incoming passengers before the bus physically arrives at Tirupur platform
-  const estimatedNewArrivals = Math.max(0, Math.round(arrivalRatePerMinute * minutesRemaining));
-
-  // Total predicted future demand when bus doors open
-  const predictedDemand = Math.max(0, currentPassengers + estimatedNewArrivals);
-
-  // Difference calculation: (Predicted Demand - Bus Capacity)
-  // Positive value (+) = shortage / overcrowding
-  // Negative value (-) = surplus seats available
-  const difference = predictedDemand - busCapacity;
-
-  // Overcrowding threshold condition
-  const isHighCrowd = predictedDemand > busCapacity;
-
-  // Alert and status copy matching project requirements exactly
-  const alertTitle = isHighCrowd ? "HIGH CROWD EXPECTED" : "NORMAL CROWD EXPECTED";
-  const alertRecommendation = isHighCrowd ? "EXTRA BUS RECOMMENDED" : "EXTRA BUS NOT REQUIRED";
-  const crowdStatus = isHighCrowd ? "HIGH CROWD" : "NORMAL CROWD";
-
-  // Additional analytics: percentage of bus capacity requested
-  const utilizationPercentage = busCapacity > 0 ? Math.round((predictedDemand / busCapacity) * 100) : 0;
-
-  return {
-    predictedDemand,
-    busCapacity,
-    difference,
-    estimatedNewArrivals,
-    arrivalRatePerMinute,
-    isHighCrowd,
-    crowdStatus,
-    alertTitle,
-    alertRecommendation,
-    utilizationPercentage
-  };
-}
-
-/**
- * Updates all DOM elements with the calculated prediction metrics
- */
-function updateDashboardUI(result, inputs) {
-  // 1. Update Primary Alert Banner
-  if (result.isHighCrowd) {
-    alertBanner.className = "alert-banner alert-high";
-    alertIcon.textContent = "⚠️";
-  } else {
-    alertBanner.className = "alert-banner alert-normal";
-    alertIcon.textContent = "✅";
+  if (routeText.includes("Avinashi")) {
+    return "Tiruppur-Avinashi";
   }
 
-  crowdStatusText.textContent = result.alertTitle;
-  busRecommendationText.textContent = result.alertRecommendation;
-
-  // 2. Update KPI Cards
-  kpiPredictedDemand.textContent = result.predictedDemand;
-  kpiBusCapacity.textContent = result.busCapacity;
-  kpiIncomingBreakdown.textContent = `Includes ~${result.estimatedNewArrivals} incoming`;
-
-  // Format difference with explicit sign (+ / -)
-  const diffSign = result.difference > 0 ? `+${result.difference}` : `${result.difference}`;
-  kpiDifference.textContent = diffSign;
-
-  if (result.difference > 0) {
-    kpiDifference.className = "metric-value diff-overload";
-    diffStatusText.textContent = `${result.difference} passengers above capacity`;
-  } else if (result.difference < 0) {
-    kpiDifference.className = "metric-value diff-normal";
-    diffStatusText.textContent = `${Math.abs(result.difference)} spare seats remaining`;
-  } else {
-    kpiDifference.className = "metric-value";
-    diffStatusText.textContent = "Exactly at full capacity";
+  if (routeText.includes("Coimbatore")) {
+    return "Tiruppur-Coimbatore";
   }
 
-  // Crowd status pill
-  kpiCrowdStatus.textContent = result.isHighCrowd ? "HIGH" : "NORMAL";
-  kpiCrowdStatus.className = `metric-value status-indicator ${result.isHighCrowd ? "status-high" : "status-normal"}`;
-  kpiCapacityUtilization.textContent = `${result.utilizationPercentage}% capacity utilization`;
+  if (routeText.includes("Kangeyam")) {
+    return "Tiruppur-Kangeyam";
+  }
 
-  // 3. Update Detailed Breakdown List
-  summaryCurrent.textContent = `${inputs.currentPassengers} passengers`;
-  summaryIncoming.textContent = `+${result.estimatedNewArrivals} passengers`;
-  summaryRate.textContent = `${result.arrivalRatePerMinute.toFixed(1)} passengers/min`;
-  summaryTotal.textContent = `${result.predictedDemand} passengers (${result.difference > 0 ? "Exceeds Capacity" : "Within Capacity"})`;
+  if (routeText.includes("Palladam")) {
+    return "Tiruppur-Palladam";
+  }
+
+  if (routeText.includes("Udumalpet")) {
+    return "Tiruppur-Udumalpet";
+  }
+
+  // Default route
+  return "Tiruppur-Avinashi";
 }
 
-/**
- * Reads form values, executes demand estimation, and updates UI
- */
-function handlePrediction() {
-  const currentPassengers = parseInt(currentPassengersInput.value, 10) || 0;
-  const historicalAverage = parseInt(historicalAverageInput.value, 10) || 0;
-  const minutesRemaining = parseInt(minutesRemainingInput.value, 10) || 0;
-  const busCapacity = parseInt(busCapacityInput.value, 10) || 1; // avoid division by zero
 
-  const inputs = {
-    currentPassengers,
-    historicalAverage,
-    minutesRemaining,
-    busCapacity,
-    busRoute: busRouteInput.value,
-    arrivalTime: arrivalTimeInput.value
+/*
+ * Get current day.
+ */
+function getCurrentDay() {
+
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ];
+
+  return days[new Date().getDay()];
+}
+
+
+/*
+ * Convert arrival time into hour.
+ */
+function getHour() {
+
+  const time = arrivalTimeInput.value;
+
+  if (!time) {
+    return 12;
+  }
+
+  return parseInt(time.split(":")[0], 10);
+}
+
+
+/*
+ * Send input data to Flask ML API.
+ */
+async function predictPassengerDemand() {
+
+  const currentPassengers =
+    parseInt(currentPassengersInput.value, 10) || 0;
+
+  const historicalAverage =
+    parseInt(historicalAverageInput.value, 10) || 0;
+
+  const busCapacity =
+    parseInt(busCapacityInput.value, 10) || 1;
+
+  const hour = getHour();
+
+  const route = getMLRoute(busRouteInput.value);
+
+  const day = getCurrentDay();
+
+  // Weather is currently set to Normal
+  // because the existing form does not have a weather input.
+  const weather = "Normal";
+
+
+  const requestData = {
+
+    Bus_Capacity: busCapacity,
+
+    Current_Passengers: currentPassengers,
+
+    Historical_Average: historicalAverage,
+
+    Hour: hour,
+
+    Day: day,
+
+    Route: route,
+
+    Weather: weather
   };
 
-  const predictionResult = predictPassengerDemand(inputs);
-  updateDashboardUI(predictionResult, inputs);
+
+  try {
+
+    const response = await fetch(API_URL, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify(requestData)
+
+    });
+
+
+    if (!response.ok) {
+      throw new Error("Prediction API error");
+    }
+
+
+    const result = await response.json();
+
+
+    const predictedDemand =
+      Number(result.predicted_passengers);
+
+    const difference =
+      predictedDemand - busCapacity;
+
+
+    const utilization =
+      busCapacity > 0
+        ? Math.round((predictedDemand / busCapacity) * 100)
+        : 0;
+
+
+    const isHighCrowd =
+      predictedDemand >= busCapacity * 0.90;
+
+
+    /*
+     * Update Alert Banner
+     */
+
+    if (isHighCrowd) {
+
+      alertBanner.className =
+        "alert-banner alert-high";
+
+      alertIcon.textContent = "⚠️";
+
+    } else {
+
+      alertBanner.className =
+        "alert-banner alert-normal";
+
+      alertIcon.textContent = "✅";
+    }
+
+
+    crowdStatusText.textContent =
+      isHighCrowd
+        ? "HIGH CROWD EXPECTED"
+        : "NORMAL CROWD EXPECTED";
+
+
+    busRecommendationText.textContent =
+      result.alert;
+
+
+    /*
+     * Update KPI cards
+     */
+
+    kpiPredictedDemand.textContent =
+      predictedDemand.toFixed(2);
+
+    kpiBusCapacity.textContent =
+      busCapacity;
+
+
+    const diffSign =
+      difference > 0
+        ? `+${difference.toFixed(2)}`
+        : difference.toFixed(2);
+
+
+    kpiDifference.textContent =
+      diffSign;
+
+
+    if (difference > 0) {
+
+      kpiDifference.className =
+        "metric-value diff-overload";
+
+      diffStatusText.textContent =
+        `${difference.toFixed(2)} passengers above capacity`;
+
+    } else if (difference < 0) {
+
+      kpiDifference.className =
+        "metric-value diff-normal";
+
+      diffStatusText.textContent =
+        `${Math.abs(difference).toFixed(2)} spare seats remaining`;
+
+    } else {
+
+      kpiDifference.className =
+        "metric-value";
+
+      diffStatusText.textContent =
+        "Exactly at full capacity";
+    }
+
+
+    /*
+     * Crowd status
+     */
+
+    kpiCrowdStatus.textContent =
+      isHighCrowd ? "HIGH" : "NORMAL";
+
+
+    kpiCrowdStatus.className =
+      `metric-value status-indicator ${
+        isHighCrowd
+          ? "status-high"
+          : "status-normal"
+      }`;
+
+
+    kpiCapacityUtilization.textContent =
+      `${utilization}% capacity utilization`;
+
+
+    /*
+     * Breakdown
+     */
+
+    summaryCurrent.textContent =
+      `${currentPassengers} passengers`;
+
+    summaryIncoming.textContent =
+      "ML model prediction";
+
+    summaryRate.textContent =
+      `Historical average: ${historicalAverage}`;
+
+    summaryTotal.textContent =
+      `${predictedDemand.toFixed(2)} passengers ${
+        difference > 0
+          ? "(Exceeds Capacity)"
+          : "(Within Capacity)"
+      }`;
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Unable to connect to the ML prediction server."
+    );
+  }
 }
 
-/**
- * Pre-set Scenarios for Quick Testing and Academic Presentations
+
+/*
+ * Handle form submission
  */
+
+predictionForm.addEventListener("submit", function(event) {
+
+  event.preventDefault();
+
+  predictPassengerDemand();
+
+});
+
+
+/*
+ * Demo Scenarios
+ */
+
 const SCENARIOS = {
+
   highCrowd: {
-    route: "Route 20A - Tirupur Old Bus Stand to Avinashi (Peak Hour)",
+
+    route:
+      "Route 20A - Tirupur Old Bus Stand to Avinashi (Peak Hour)",
+
     time: "17:30",
+
     capacity: 50,
+
     current: 45,
+
     historical: 65,
+
     minutesRemaining: 15
   },
+
+
   normalCrowd: {
-    route: "Route 12B - Tirupur New Bus Stand to Kangeyam (Mid-day)",
+
+    route:
+      "Route 12B - Tirupur New Bus Stand to Kangeyam (Mid-day)",
+
     time: "14:15",
+
     capacity: 55,
+
     current: 20,
+
     historical: 35,
+
     minutesRemaining: 10
   },
+
+
   default: {
-    route: "Route 20A - Tirupur Old Bus Stand to Avinashi",
+
+    route:
+      "Route 20A - Tirupur Old Bus Stand to Avinashi",
+
     time: "16:45",
+
     capacity: 50,
+
     current: 42,
+
     historical: 60,
+
     minutesRemaining: 15
   }
 };
 
-function applyScenario(scenario) {
-  busRouteInput.value = scenario.route;
-  arrivalTimeInput.value = scenario.time;
-  busCapacityInput.value = scenario.capacity;
-  currentPassengersInput.value = scenario.current;
-  historicalAverageInput.value = scenario.historical;
-  minutesRemainingInput.value = scenario.minutesRemaining;
 
-  // Immediately evaluate with the new scenario values
-  handlePrediction();
+/*
+ * Apply scenario
+ */
+
+function applyScenario(scenario) {
+
+  busRouteInput.value =
+    scenario.route;
+
+  arrivalTimeInput.value =
+    scenario.time;
+
+  busCapacityInput.value =
+    scenario.capacity;
+
+  currentPassengersInput.value =
+    scenario.current;
+
+  historicalAverageInput.value =
+    scenario.historical;
+
+  minutesRemainingInput.value =
+    scenario.minutesRemaining;
+
+
+  predictPassengerDemand();
 }
 
-// Event Listeners
-predictionForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  handlePrediction();
-});
 
-presetHighCrowdBtn.addEventListener("click", () => {
-  applyScenario(SCENARIOS.highCrowd);
-});
+/*
+ * Preset buttons
+ */
 
-presetNormalCrowdBtn.addEventListener("click", () => {
-  applyScenario(SCENARIOS.normalCrowd);
-});
+presetHighCrowdBtn.addEventListener(
+  "click",
+  function() {
 
-resetDefaultsBtn.addEventListener("click", () => {
-  applyScenario(SCENARIOS.default);
-});
+    applyScenario(
+      SCENARIOS.highCrowd
+    );
 
-// Initialize on page load with sample values
-window.addEventListener("DOMContentLoaded", () => {
-  handlePrediction();
-});
+  }
+);
+
+
+presetNormalCrowdBtn.addEventListener(
+  "click",
+  function() {
+
+    applyScenario(
+      SCENARIOS.normalCrowd
+    );
+
+  }
+);
+
+
+resetDefaultsBtn.addEventListener(
+  "click",
+  function() {
+
+    applyScenario(
+      SCENARIOS.default
+    );
+
+  }
+);
+
+
+/*
+ * Initial prediction
+ */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    predictPassengerDemand();
+
+  }
+);
