@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import joblib
 import pandas as pd
 
@@ -7,11 +7,9 @@ app = Flask(__name__)
 # Load trained model
 model = joblib.load("bus_demand_model.pkl")
 
-
 @app.route("/")
 def home():
-    return "Bus Demand Prediction ML Model is running!"
-
+    return send_from_directory(".", "index.html")
 
 @app.route("/predict", methods=["POST"])
 def predict():
