@@ -186,34 +186,51 @@ async function predictPassengerDemand() {
         : 0;
 
 
-    const isHighCrowd =
-      predictedDemand >= busCapacity * 0.90;
+const isHighCrowd =
+  predictedDemand >= busCapacity * 0.90;
+
+const isMediumCrowd =
+  predictedDemand >= busCapacity * 0.75;
 
 
-    /*
-     * Update Alert Banner
-     */
+/*
+ * Update Alert Banner
+ */
 
-    if (isHighCrowd) {
+if (isHighCrowd) {
 
-      alertBanner.className =
-        "alert-banner alert-high";
+  alertBanner.className =
+    "alert-banner alert-high";
 
-      alertIcon.textContent = "⚠️";
+  alertIcon.textContent = "⚠️";
 
-    } else {
+  crowdStatusText.textContent =
+    "HIGH CROWD EXPECTED";
 
-      alertBanner.className =
-        "alert-banner alert-normal";
+} else if (isMediumCrowd) {
 
-      alertIcon.textContent = "✅";
-    }
+  alertBanner.className =
+    "alert-banner alert-normal";
+
+  alertIcon.textContent = "⚠️";
+
+  crowdStatusText.textContent =
+    "MEDIUM CROWD EXPECTED";
+
+} else {
+
+  alertBanner.className =
+    "alert-banner alert-normal";
+
+  alertIcon.textContent = "✅";
+
+  crowdStatusText.textContent =
+    "LOW CROWD EXPECTED";
+}
 
 
-    crowdStatusText.textContent =
-      isHighCrowd
-        ? "HIGH CROWD EXPECTED"
-        : "NORMAL CROWD EXPECTED";
+busRecommendationText.textContent =
+  result.alert;
 
 
     busRecommendationText.textContent =
