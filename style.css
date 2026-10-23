@@ -23,6 +23,11 @@
   --danger-text: #991b1b;
   --danger-badge: #dc2626;
 
+  --warning-bg: #fffbeb;
+  --warning-border: #f59e0b;
+  --warning-text: #92400e;
+  --warning-badge: #d97706;
+
   --success-bg: #f0fdf4;
   --success-border: #22c55e;
   --success-text: #166534;
@@ -362,6 +367,14 @@ body {
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.12);
 }
 
+.alert-banner.alert-medium,
+.alert-banner.alert-warning {
+  background-color: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+}
+
 .alert-banner.alert-normal {
   background-color: var(--success-bg);
   border-color: var(--success-border);
@@ -467,7 +480,12 @@ body {
   color: #dc2626 !important;
 }
 
-.status-normal {
+.status-medium {
+  color: #d97706 !important;
+}
+
+.status-normal,
+.status-low {
   color: #16a34a !important;
 }
 
@@ -559,4 +577,24 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+/* Form Validation & Error Banner */
+.form-error-banner {
+  background-color: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.input-invalid {
+  border-color: var(--danger-border) !important;
+  background-color: #fff5f5 !important;
 }

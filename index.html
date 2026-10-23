@@ -19,7 +19,7 @@
       </div>
       <div class="header-badge">
         <span class="badge-dot"></span>
-        <span>Prototype v1.0</span>
+        <span>ML Model Connected</span>
       </div>
     </div>
   </header>
@@ -37,8 +37,11 @@
         <button type="button" class="btn btn-preset" id="presetHighCrowd">
           ⚠️ Scenario 1: High Surge (Extra Bus Needed)
         </button>
+        <button type="button" class="btn btn-preset" id="presetMediumCrowd">
+          ℹ️ Scenario 2: Moderate Load (Medium Crowd)
+        </button>
         <button type="button" class="btn btn-preset" id="presetNormalCrowd">
-          ✅ Scenario 2: Normal Flow (Capacity Sufficient)
+          ✅ Scenario 3: Normal Flow (Capacity Sufficient)
         </button>
         <button type="button" class="btn btn-secondary-sm" id="resetDefaults">
           🔄 Reset Defaults
@@ -57,16 +60,26 @@
         </div>
 
         <form id="predictionForm" class="prediction-form" novalidate>
+          <div id="formErrorMessage" class="form-error-banner" style="display: none;" role="alert"></div>
+
           <div class="form-group">
             <label for="busRoute">Bus Route / Name</label>
             <input 
               type="text" 
               id="busRoute" 
               name="busRoute" 
+              list="routeList"
               required 
               placeholder="e.g., Route 20A - Tirupur Old Bus Stand to Avinashi" 
               value="Route 20A - Tirupur Old Bus Stand to Avinashi"
             >
+            <datalist id="routeList">
+              <option value="Route 20A - Tirupur Old Bus Stand to Avinashi"></option>
+              <option value="Route 45 - Tirupur Old Bus Stand to Coimbatore"></option>
+              <option value="Route 12B - Tirupur New Bus Stand to Kangeyam"></option>
+              <option value="Route 15 - Tirupur Bus Stand to Palladam"></option>
+              <option value="Route 33 - Tirupur Bus Stand to Udumalpet"></option>
+            </datalist>
           </div>
 
           <div class="form-row">
@@ -238,15 +251,13 @@
           </ul>
         </div>
 
-        <!-- Prototype ML Notice -->
+        <!-- ML Integration Notice -->
         <div class="prototype-notice">
-          <div class="notice-icon">ℹ️</div>
+          <div class="notice-icon">🤖</div>
           <div class="notice-body">
-            <strong>Prototype Architecture Note:</strong>
+            <strong>Trained Machine Learning Model Active:</strong>
             <p>
-              This prototype utilizes a decoupled heuristic baseline in 
-              <code>script.js</code> (<code>predictPassengerDemand()</code>). 
-              It is designed as an interface-ready decision support tool that can be linked to a trained Machine Learning model (e.g., Random Forest / Regression) in the next phase.
+              Connected to Flask REST API (<code>/predict</code>) serving a trained <strong>Random Forest Regression</strong> model (<code>bus_demand_model.pkl</code>) with 19 engineered features across terminal load, route, schedule, and environmental factors.
             </p>
           </div>
         </div>
